@@ -14,6 +14,8 @@ class _MyLocationState extends State<MyLocation> {
   Location location = Location();
   LocationData? _currentPosition;
   bool _pressed = false;
+  double? lat = 0;
+  double? lon = 0;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _MyLocationState extends State<MyLocation> {
                     style: const TextStyle(color: Colors.white)),
               ElevatedButton(
                 onPressed: () {
+                  getLoc();
                   Navigator.push(
                       context,
                       MaterialPageRoute(
