@@ -13,19 +13,14 @@ class MyLocation extends StatefulWidget {
 class _MyLocationState extends State<MyLocation> {
   Location location = Location();
   LocationData? _currentPosition;
-  bool _pressed = false;
-  double? lat = 0;
-  double? lon = 0;
+  double latitudeAtual = 0;
+  double longitudeAtual = 0;
+  double altitudeAtual = 0;
 
   @override
   void initState() {
+    getLoc();
     super.initState();
-
-    Timer.periodic(const Duration(milliseconds: 1000), (timer) {
-      setState(() {
-        getLoc();
-      });
-    });
   }
 
   @override
@@ -37,35 +32,66 @@ class _MyLocationState extends State<MyLocation> {
           backgroundColor: Colors.green,
           title: const Text('Teste da Vivi'),
         ),
-        body: Container(
-          width: 300,
-          height: 300,
-          color: Colors.indigo,
+        body: Center(
           child: Column(
             children: [
-              if (_currentPosition != null)
-                Text('${_currentPosition!.latitude}',
-                    style: const TextStyle(color: Colors.white)),
-              if (_currentPosition != null)
-                Text('${_currentPosition!.longitude}',
-                    style: const TextStyle(color: Colors.white)),
-              if (_currentPosition != null)
-                Text('${_currentPosition!.altitude}',
-                    style: const TextStyle(color: Colors.white)),
+              Text(
+                '$latitudeAtual',
+                style: const TextStyle(color: Colors.black),
+              ),
+              Text(
+                '$longitudeAtual',
+                style: const TextStyle(color: Colors.black),
+              ),
+              Text(
+                '$altitudeAtual',
+                style: const TextStyle(color: Colors.black),
+              ),
               ElevatedButton(
                 onPressed: () {
                   getLoc();
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const OrderTrackingPage()));
-                  _pressed = !_pressed;
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OrderTrackingPage(),
+                    ),
+                  );
                 },
                 child: const Text('Me aperte'),
-              )
+              ),
             ],
           ),
         ),
+        // : Container(
+        //     width: 300,
+        //     height: 300,
+        //     color: Colors.indigo,
+        //     child: Column(
+        //       children: [
+        //         // if (_currentPosition != null)
+        //         Text('$latitudeAtual',
+        //             style: const TextStyle(color: Colors.white)),
+        //         // if (_currentPosition != null)
+        //         Text('$longitudeAtual',
+        //             style: const TextStyle(color: Colors.white)),
+        //         // if (_currentPosition != null)
+        //         Text('$altitudeAtual',
+        //             style: const TextStyle(color: Colors.white)),
+        //         ElevatedButton(
+        //           onPressed: () {
+        //             getLoc();
+        //             Navigator.push(
+        //               context,
+        //               MaterialPageRoute(
+        //                 builder: (context) => const OrderTrackingPage(),
+        //               ),
+        //             );
+        //           },
+        //           child: const Text('Me aperte'),
+        //         )
+        //       ],
+        //     ),
+        //   ),
       ),
     );
   }
@@ -88,9 +114,19 @@ class _MyLocationState extends State<MyLocation> {
         return;
       }
     }
-    if (!_pressed) {
-      _currentPosition = await location.getLocation();
-    }
-    //debugPrint(_currentPosition.toString());
+    location.getLocation().then(
+      (location) {
+        _currentPosition = location;
+      },
+    );
+    location.onLocationChanged.listen(
+      (newLoc) {
+        _currentPosition = newLoc;
+        latitudeAtual = _currentPosition!.latitude!;
+        longitudeAtual = _currentPosition!.longitude!;
+        altitudeAtual = _currentPosition!.altitude!;
+        setState(() {});
+      },
+    );
   }
 }

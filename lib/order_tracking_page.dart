@@ -6,9 +6,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 class OrderTrackingPage extends StatefulWidget {
-  // final LatLng? source;
-  // final LatLng? destination;
-
   const OrderTrackingPage({super.key});
 
   @override
@@ -20,6 +17,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   static const LatLng sourceLocation = LatLng(-3.8161324, -38.6228556);
   static const LatLng destination = LatLng(-3.7457883, -38.5428437);
+
+  List<LatLng> rota = <LatLng>[];
+  Set<Polyline> coordinates = {};
+  bool pressed = false;
 
   @override
   void initState() {
@@ -38,42 +39,52 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           ? const Center(
               child: Text('Loading...'),
             )
-          : GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: LatLng(
-                  currentLocation!.latitude!,
-                  currentLocation!.longitude!,
-                ),
-                zoom: 13.5,
-              ),
-              markers: {
-                Marker(
-                  markerId: const MarkerId('currentLocation'),
-                  position: LatLng(
-                    currentLocation!.latitude!,
-                    currentLocation!.longitude!,
+          : Stack(
+              children: [
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(
+                      currentLocation!.latitude!,
+                      currentLocation!.longitude!,
+                    ),
+                    zoom: 13.5,
                   ),
+                  markers: {
+                    Marker(
+                      markerId: const MarkerId('currentLocation'),
+                      position: LatLng(
+                        currentLocation!.latitude!,
+                        currentLocation!.longitude!,
+                      ),
+                    ),
+                    const Marker(
+                      markerId: MarkerId("source"),
+                      position: sourceLocation,
+                    ),
+                    const Marker(
+                      markerId: MarkerId("destination"),
+                      position: destination,
+                    ),
+                  },
+                  onMapCreated: (mapController) {
+                    _controller.complete(mapController);
+                  },
+                  polylines: {
+                    Polyline(
+                      polylineId: const PolylineId("route"),
+                      points: polylineCoordinates,
+                      color: const Color(0xFF7B61FF),
+                      width: 6,
+                    ),
+                  },
                 ),
-                const Marker(
-                  markerId: MarkerId("source"),
-                  position: sourceLocation,
+                ElevatedButton(
+                  onPressed: () {
+                    pressed = !pressed;
+                  },
+                  child: const Text('Começar viagem'),
                 ),
-                const Marker(
-                  markerId: MarkerId("destination"),
-                  position: destination,
-                ),
-              },
-              onMapCreated: (mapController) {
-                _controller.complete(mapController);
-              },
-              polylines: {
-                Polyline(
-                  polylineId: const PolylineId("route"),
-                  points: polylineCoordinates,
-                  color: const Color(0xFF7B61FF),
-                  width: 6,
-                ),
-              },
+              ],
             ),
     );
   }
@@ -108,30 +119,69 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   void getCurrentLocation() async {
     Location location = Location();
 
+    bool _serviceEnabled;
+    PermissionStatus _permissionGranted;
+
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
     location.getLocation().then(
       (location) {
         currentLocation = location;
       },
     );
-    GoogleMapController googleMapController = await _controller.future;
+    if (pressed) {
+      location.onLocationChanged.listen(
+        (newLoc) {
+          currentLocation = newLoc;
+          rota.add(LatLng(newLoc.latitude!, newLoc.longitude!));
+          setState(() {});
+        },
+      );
+    }
+  }
 
-    location.onLocationChanged.listen(
-      (newLoc) {
-        currentLocation = newLoc;
+  void addPolyLines() async {
+    PolylinePoints polylinePoints = PolylinePoints();
+    List<LatLng> polylineCoordinates = [];
 
-        googleMapController.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(
-                newLoc.latitude!,
-                newLoc.longitude!,
-              ),
-              zoom: 13.5,
-            ),
+    for (int i = 0; i < rota.length - 1; i++) {
+      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+        'googleApiKey',
+        PointLatLng(rota[i].latitude, rota[i].longitude),
+        PointLatLng(rota[++i].latitude, rota[++i].longitude),
+      );
+      if (result.points.isNotEmpty) {
+        result.points.forEach(
+          (PointLatLng point) {
+            polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+          },
+        );
+      }
+    }
+    setState(
+      () {
+        coordinates.add(
+          Polyline(
+            polylineId: const PolylineId('rota'),
+            color: Colors.green,
+            width: 5,
+            points: polylineCoordinates,
           ),
         );
       },
     );
-    setState(() {});
   }
 }
