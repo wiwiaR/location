@@ -24,7 +24,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   void initState() {
-    getPolyPoints();
+    // getPolyPoints();
     getCurrentLocation();
     super.initState();
   }
@@ -36,8 +36,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         title: const Text('Mapa'),
       ),
       body: currentLocation == null
-          ? const Center(
-              child: Text('Loading...'),
+          ? Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {});
+                },
+                child: const Text('Abrir mapa'),
+              ),
             )
           : Stack(
               children: [
@@ -57,14 +62,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                         currentLocation!.longitude!,
                       ),
                     ),
-                    const Marker(
-                      markerId: MarkerId("source"),
-                      position: sourceLocation,
-                    ),
-                    const Marker(
-                      markerId: MarkerId("destination"),
-                      position: destination,
-                    ),
                   },
                   onMapCreated: (mapController) {
                     _controller.complete(mapController);
@@ -81,6 +78,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                 ElevatedButton(
                   onPressed: () {
                     pressed = !pressed;
+                    getCurrentLocation();
+                    debugPrint(pressed.toString());
                   },
                   child: const Text('Começar viagem'),
                 ),
@@ -140,46 +139,65 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     location.getLocation().then(
       (location) {
         currentLocation = location;
+        if (rota.isEmpty) {
+          rota.add(
+              LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
+        }
+        setState(() {});
       },
     );
+
     if (pressed) {
       location.onLocationChanged.listen(
         (newLoc) {
           currentLocation = newLoc;
           rota.add(LatLng(newLoc.latitude!, newLoc.longitude!));
           setState(() {});
+          // addPolyLines();
         },
       );
     }
   }
 
   void addPolyLines() async {
-    PolylinePoints polylinePoints = PolylinePoints();
-    List<LatLng> polylineCoordinates = [];
+    Timer.periodic(
+      const Duration(milliseconds: 1000),
+      (timer) async {
+        PolylinePoints polylinePoints = PolylinePoints();
+        List<LatLng> polylineCoordinates = [];
 
-    for (int i = 0; i < rota.length - 1; i++) {
-      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-        'googleApiKey',
-        PointLatLng(rota[i].latitude, rota[i].longitude),
-        PointLatLng(rota[++i].latitude, rota[++i].longitude),
-      );
-      if (result.points.isNotEmpty) {
-        result.points.forEach(
-          (PointLatLng point) {
-            polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+        int i = 0;
+        while (i < rota.length + 1) {
+          if (i == rota.length) {
+            break;
+          }
+          PolylineResult result =
+              await polylinePoints.getRouteBetweenCoordinates(
+            'AIzaSyB-lwcRd8iANVoEDwxkpCpht8d3B_Ay-Ms',
+            PointLatLng(rota[i].latitude, rota[i].longitude),
+            PointLatLng(rota[++i].latitude, rota[++i].longitude),
+          );
+          if (result.points.isNotEmpty) {
+            result.points.forEach(
+              (PointLatLng point) {
+                polylineCoordinates
+                    .add(LatLng(point.latitude, point.longitude));
+              },
+            );
+          }
+        }
+
+        setState(
+          () {
+            coordinates.add(
+              Polyline(
+                polylineId: const PolylineId('rota'),
+                color: Colors.green,
+                width: 5,
+                points: polylineCoordinates,
+              ),
+            );
           },
-        );
-      }
-    }
-    setState(
-      () {
-        coordinates.add(
-          Polyline(
-            polylineId: const PolylineId('rota'),
-            color: Colors.green,
-            width: 5,
-            points: polylineCoordinates,
-          ),
         );
       },
     );
