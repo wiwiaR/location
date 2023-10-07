@@ -75,13 +75,35 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     ),
                   },
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    pressed = !pressed;
-                    getCurrentLocation();
-                    debugPrint(pressed.toString());
-                  },
-                  child: const Text('Começar viagem'),
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        pressed = !pressed;
+                        getCurrentLocation();
+                        debugPrint(pressed.toString());
+                      },
+                      child: const Text('Começar viagem'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) => AlertDialog(
+                            title: const Text('Título'),
+                            content: const Text('Corpo'),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, 'Ok'),
+                                child: const Text('Ok'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: const Text('Alerta'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -147,11 +169,27 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       },
     );
 
+    GoogleMapController googleMapController = await _controller.future;
+    double zoom = 0;
+    googleMapController.getZoomLevel().then((value) => zoom = value);
+
     if (pressed) {
       location.onLocationChanged.listen(
         (newLoc) {
           currentLocation = newLoc;
           rota.add(LatLng(newLoc.latitude!, newLoc.longitude!));
+          googleMapController.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                zoom: zoom,
+                target: LatLng(
+                  newLoc.latitude!,
+                  newLoc.longitude!,
+                ),
+              ),
+            ),
+          );
+
           setState(() {});
           // addPolyLines();
         },
@@ -166,11 +204,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         PolylinePoints polylinePoints = PolylinePoints();
         List<LatLng> polylineCoordinates = [];
 
-        int i = 0;
-        while (i < rota.length + 1) {
-          if (i == rota.length) {
-            break;
-          }
+        for (int i = 0; i < rota.length - 2; i++) {
           PolylineResult result =
               await polylinePoints.getRouteBetweenCoordinates(
             'AIzaSyB-lwcRd8iANVoEDwxkpCpht8d3B_Ay-Ms',

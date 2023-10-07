@@ -15,6 +15,7 @@ class _MyLocationState extends State<MyLocation> {
   double latitudeAtual = 0;
   double longitudeAtual = 0;
   double altitudeAtual = 0;
+  int numero = 0;
 
   @override
   void initState() {
@@ -58,41 +59,36 @@ class _MyLocationState extends State<MyLocation> {
                 },
                 child: const Text('Me aperte'),
               ),
+              ElevatedButton(
+                onPressed: () {
+                  addNumero();
+                },
+                child: const Text('Soma valor'),
+              ),
             ],
           ),
         ),
-        // : Container(
-        //     width: 300,
-        //     height: 300,
-        //     color: Colors.indigo,
-        //     child: Column(
-        //       children: [
-        //         // if (_currentPosition != null)
-        //         Text('$latitudeAtual',
-        //             style: const TextStyle(color: Colors.white)),
-        //         // if (_currentPosition != null)
-        //         Text('$longitudeAtual',
-        //             style: const TextStyle(color: Colors.white)),
-        //         // if (_currentPosition != null)
-        //         Text('$altitudeAtual',
-        //             style: const TextStyle(color: Colors.white)),
-        //         ElevatedButton(
-        //           onPressed: () {
-        //             getLoc();
-        //             Navigator.push(
-        //               context,
-        //               MaterialPageRoute(
-        //                 builder: (context) => const OrderTrackingPage(),
-        //               ),
-        //             );
-        //           },
-        //           child: const Text('Me aperte'),
-        //         )
-        //       ],
-        //     ),
-        //   ),
       ),
     );
+  }
+
+  addNumero() async {
+    numero++;
+    if (numero == 4) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: const Text('Limite alcançado'),
+          content: Text('Você alcançou o número $numero'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Ok'),
+              child: const Text('Ok'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   getLoc() async {
