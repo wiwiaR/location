@@ -15,6 +15,8 @@ class _MyLocationState extends State<MyLocation> {
   double latitudeAtual = 0;
   double longitudeAtual = 0;
   double altitudeAtual = 0;
+  double solo = 0;
+  String texto = '';
   int numero = 0;
 
   @override
@@ -47,6 +49,10 @@ class _MyLocationState extends State<MyLocation> {
                 '$altitudeAtual',
                 style: const TextStyle(color: Colors.black),
               ),
+              Text(
+                texto,
+                style: const TextStyle(color: Colors.black),
+              ),
               ElevatedButton(
                 onPressed: () {
                   getLoc();
@@ -64,6 +70,13 @@ class _MyLocationState extends State<MyLocation> {
                   addNumero();
                 },
                 child: const Text('Soma valor'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  solo = altitudeAtual;
+                  setState(() {});
+                },
+                child: const Text('Preparar para Voo'),
               ),
             ],
           ),
@@ -121,6 +134,11 @@ class _MyLocationState extends State<MyLocation> {
         longitudeAtual = _currentPosition!.longitude!;
         altitudeAtual = _currentPosition!.altitude!;
         setState(() {});
+        if (altitudeAtual > solo + 15) {
+          texto = 'Você está voando';
+        } else {
+          texto = 'Você está no chão';
+        }
       },
     );
   }
